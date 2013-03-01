@@ -4070,10 +4070,10 @@ unsigned long __weak arch_scale_smt_power(struct sched_domain *sd, int cpu)
 	return default_scale_smt_power(sd, cpu);
 }
 
-unsigned long scale_rt_power(int cpu)
+unsigned long scale_rt_util(int cpu)
 {
 	struct rq *rq = cpu_rq(cpu);
-	u64 total, available, age_stamp, avg;
+	u64 total, age_stamp, avg;
 
 	/*
 	 * Since we're reading these variables without serialization make sure
@@ -4085,10 +4085,8 @@ unsigned long scale_rt_power(int cpu)
 	total = sched_avg_period() + (rq->clock - age_stamp);
 
 	if (unlikely(total < avg)) {
-		/* Ensures that power won't end up being negative */
-		available = 0;
-	} else {
-		available = total - avg;
+		/* Ensures rt utilization won't beyond full scaled value */
+		return SCHED_POWER_SCALE;
 	}
 
 	if (unlikely((s64)total < SCHED_POWER_SCALE))
@@ -4096,7 +4094,7 @@ unsigned long scale_rt_power(int cpu)
 
 	total >>= SCHED_POWER_SHIFT;
 
-	return div_u64(available, total);
+	return div_u64(avg, total);
 }
 
 static void update_cpu_power(struct sched_domain *sd, int cpu)
@@ -4123,7 +4121,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
 
 	power >>= SCHED_POWER_SHIFT;
 
-	power *= scale_rt_power(cpu);
+	power *= SCHED_POWER_SCALE - scale_rt_util(cpu);
 	power >>= SCHED_POWER_SHIFT;
 
 	if (!power)
