@@ -868,7 +868,7 @@ void synchronize_rcu_expedited(void)
 			udelay(trycount * num_online_cpus());
 		} else {
 			put_online_cpus();
-			synchronize_rcu();
+			wait_rcu_gp(call_rcu);
 			return;
 		}
 	}
@@ -1895,7 +1895,7 @@ static void rcu_prepare_for_idle(int cpu)
 		return;
 
 	/* If this is a no-CBs CPU, no callbacks, just return. */
-	if (is_nocb_cpu(cpu))
+	if (rcu_is_nocb_cpu(cpu))
 		return;
 
 	/*
@@ -1937,7 +1937,7 @@ static void rcu_cleanup_after_idle(int cpu)
 	struct rcu_data *rdp;
 	struct rcu_state *rsp;
 
-	if (is_nocb_cpu(cpu))
+	if (rcu_is_nocb_cpu(cpu))
 		return;
 	rcu_try_advance_all_cbs();
 	for_each_rcu_flavor(rsp) {
