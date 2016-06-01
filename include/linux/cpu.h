@@ -141,6 +141,7 @@ static inline void unregister_cpu_notifier(struct notifier_block *nb)
 }
 #endif
 
+void smpboot_thread_init(void);
 int cpu_up(unsigned int cpu);
 void notify_cpu_starting(unsigned int cpu);
 extern void cpu_maps_update_begin(void);
