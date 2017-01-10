@@ -2357,13 +2357,6 @@ static void invoke_rcu_core(void)
 }
 
 /*
- * RCU callback function to leak a callback.
- */
-static void rcu_leak_callback(struct rcu_head *rhp)
-{
-}
-
-/*
  * Handle any core-RCU processing required by a call_rcu() invocation.
  */
 static void __call_rcu_core(struct rcu_state *rsp, struct rcu_data *rdp,
@@ -2694,7 +2687,7 @@ void synchronize_sched_expedited(void)
 		s = atomic_long_read(&rsp->expedited_done);
 		if (ULONG_CMP_GE((ulong)s, (ulong)firstsnap)) {
 			/* ensure test happens before caller kfree */
-			smp_mb__before_atomic(); /* ^^^ */
+			smp_mb__before_atomic_inc(); /* ^^^ */
 			atomic_long_inc(&rsp->expedited_workdone1);
 			return;
 		}
@@ -2712,7 +2705,7 @@ void synchronize_sched_expedited(void)
 		s = atomic_long_read(&rsp->expedited_done);
 		if (ULONG_CMP_GE((ulong)s, (ulong)firstsnap)) {
 			/* ensure test happens before caller kfree */
-			smp_mb__before_atomic(); /* ^^^ */
+			smp_mb__before_atomic_inc(); /* ^^^ */
 			atomic_long_inc(&rsp->expedited_workdone2);
 			return;
 		}
@@ -2741,7 +2734,7 @@ void synchronize_sched_expedited(void)
 		s = atomic_long_read(&rsp->expedited_done);
 		if (ULONG_CMP_GE((ulong)s, (ulong)snap)) {
 			/* ensure test happens before caller kfree */
-			smp_mb__before_atomic(); /* ^^^ */
+			smp_mb__before_atomic_inc(); /* ^^^ */
 			atomic_long_inc(&rsp->expedited_done_lost);
 			break;
 		}
