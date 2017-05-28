@@ -84,3 +84,9 @@ GTAGS
 *.orig
 *~
 \#*#
+
+#gabriel kernel
+READY_KERNEL/
+TOOLCHAIN/
+TOOLSET/
+WORKING_DIR/
