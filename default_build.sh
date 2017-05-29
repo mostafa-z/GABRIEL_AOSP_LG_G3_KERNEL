@@ -28,12 +28,12 @@ LANG=C
 # define variables
 #------------------------------------
 TODAY=`date '+%Y%m%d'`;
-GIT_BRANCH=`git symbolic-ref --short HEAD`;
-GITCCOUNT=$(git shortlog | grep -E '^[ ]+\w+' | wc -l);
+#GIT_BRANCH=`git symbolic-ref --short HEAD`;
+#GITCCOUNT=$(git shortlog | grep -E '^[ ]+\w+' | wc -l);
 COLOR_RED="\033[0;31m"
 COLOR_GREEN="\033[1;32m"
 COLOR_NEUTRAL="\033[0m"
-LOG=(WORKING_DIR/package/compile.log);
+LOG=(WORKING_DIR/temp/compile.log);
 TCGAB=(TOOLCHAIN/gabriel-ctng/bin/arm-eabi-);
 TCGL480=(TOOLCHAIN/google-4.8/bin/arm-eabi-);
 TCA493=(TOOLCHAIN/architoolchain-4.9/bin/arm-architoolchain-linux-gnueabi-);
@@ -61,7 +61,7 @@ DTC=(scripts/dtc);
 TS=(TOOLSET);
 DCONF=(arch/arm/configs);
 STOCK_DEF=(g3-global_com-perf_defconfig);
-NAME=Gabriel-$(grep "CONFIG_LOCALVERSION=" arch/arm/configs/lineageos_d855_defconfig | cut -c 23-28);
+NAME=Gabriel-$(grep "CONFIG_LOCALVERSION=" arch/arm/configs/lineageos_d855_defconfig | cut -c 23-29);
 
 export PATH=$PATH:tools/lz4demo
 #===============================================================================
@@ -118,12 +118,11 @@ LOG_CHECK()
 	echo -e "Check for compile errors:"
 	echo -e $COLOR_RED
 
-	cd $WD/package
+	cd $WD/temp
 	grep error compile.log
 	grep forbidden compile.log
 	grep warning compile.log
 	grep fail compile.log
-	grep no compile.log
 	echo -e $COLOR_NEUTRAL
 # back to main directory
 	cd ..
@@ -188,9 +187,6 @@ NR_CPUS;
 
 	echo -e "\e[41mREBUILD\e[m"
 	echo ""
-	echo -e $COLOR_GREEN"Git Branch is at : "$GIT_BRANCH $COLOR_RED">>> "$COLOR_GREEN$GITCCOUNT" commits" $COLOR_NEUTRAL
-	echo ""
-	sleep 3
 
 	touch WORKING_DIR/temp/compile.log
 	echo -e "\n***************************************************" > $LOG
@@ -221,9 +217,6 @@ NR_CPUS;
 
 	echo -e "\e[41mREBUILD\e[m"
 	echo -e ""
-	echo -e $COLOR_GREEN"Git Branch is at : "$GIT_BRANCH $COLOR_RED">>> "$COLOR_GREEN$GITCCOUNT" commits" $COLOR_NEUTRAL
-	echo -e ""
-	sleep 3
 
 	echo -e "\n***************************************************" > $LOG
 	echo -e "\nGIT branch and last commit : " >> $LOG
