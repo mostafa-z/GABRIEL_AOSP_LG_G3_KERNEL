@@ -360,8 +360,9 @@ sapGotoChannelSel
                     {
                         sapContext->channel = sapContext->channelList[i];
                     }
-                    vos_mem_free(sapContext->channelList);
-                    sapContext->channelList = NULL;
+
+                 vos_mem_free(sapContext->channelList);
+                 sapContext->channelList = NULL;
             }
 #ifdef FEATURE_WLAN_CH_AVOID
             else
