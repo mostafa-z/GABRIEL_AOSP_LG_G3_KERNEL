@@ -249,10 +249,12 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else if [ -x /bin/bash ]; then echo /bin/bash; \
 	  else echo sh; fi ; fi)
 
+GRAPHITE = -fgraphite -fgraphite-identity -floop-interchange -ftree-loop-distribution -floop-strip-mine -floop-block -ftree-loop-linear
+
 HOSTCC       = ccache gcc
 HOSTCXX      = ccache g++
-HOSTCFLAGS = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fno-tree-vectorize -fomit-frame-pointer -pipe -DNDEBUG -fgcse-las
-HOSTCXXFLAGS = -pipe -DNDEBUG -O2 -fgcse-las
+HOSTCFLAGS = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fno-tree-vectorize -fomit-frame-pointer -pipe -DNDEBUG -fgcse-las $(GRAPHITE)
+HOSTCXXFLAGS = -pipe -DNDEBUG -O2 -fgcse-las $(GRAPHITE)
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -358,7 +360,7 @@ CHECK		= sparse
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
 
-KERNELFLAGS = -pipe -DNDEBUG -O2 -mtune=cortex-a15 -mcpu=cortex-a15 -marm -mfpu=neon-vfpv4 -fno-tree-vectorize -munaligned-access -fgcse-lm -fgcse-sm -fsingle-precision-constant -fforce-addr -fsched-spec-load
+KERNELFLAGS = -pipe -DNDEBUG -O2 -mtune=cortex-a15 -mcpu=cortex-a15 -marm -mfpu=neon-vfpv4 -fno-tree-vectorize -munaligned-access -fgcse-lm -fgcse-sm -fsingle-precision-constant -fforce-addr -fsched-spec-load $(GRAPHITE)
 MODFLAGS	= -DMODULE $(KERNELFLAGS)
 CFLAGS_MODULE	= $(MODFLAGS)
 AFLAGS_MODULE	= $(MODFLAGS)
