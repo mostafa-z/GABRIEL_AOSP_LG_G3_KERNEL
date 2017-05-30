@@ -28,12 +28,16 @@ LANG=C
 # define variables
 #------------------------------------
 TODAY=`date '+%Y%m%d'`;
+
+# Bash Color
+COLOR_GREEN='\033[01;32m'
+COLOR_RED='\033[01;31m'
+BLINK_RED='\033[05;31m'
+COLOR_NEUTRAL='\033[0m'
+
 #GIT_BRANCH=`git symbolic-ref --short HEAD`;
 #GITCCOUNT=$(git shortlog | grep -E '^[ ]+\w+' | wc -l);
-COLOR_RED="\033[0;31m"
-COLOR_GREEN="\033[1;32m"
-COLOR_NEUTRAL="\033[0m"
-LOG=(WORKING_DIR/temp/compile.log);
+
 TCGAB=(TOOLCHAIN/gabriel-ctng/bin/arm-eabi-);
 TCGL480=(TOOLCHAIN/google-4.8/bin/arm-eabi-);
 TCA493=(TOOLCHAIN/architoolchain-4.9/bin/arm-architoolchain-linux-gnueabi-);
@@ -54,6 +58,7 @@ TCLN530=(TOOLCHAIN/linaro-5.3/bin/arm-eabi-);
 TCLN610=(TOOLCHAIN/linaro-6.1/bin/arm-eabi-);
 TCLN630=(TOOLCHAIN/linaro-6.3/bin/arm-eabi-);
 KD=$(readlink -f .);
+LOG=(WORKING_DIR/temp/compile.log);
 WD=(WORKING_DIR);
 RK=(READY_KERNEL);
 BOOT=(arch/arm/boot);
@@ -98,7 +103,7 @@ NR_CPUS()
 # check if kernel zip file had build or not
 FILE_CHECK()
 {
-	echo -e "\n***************************************************"
+	echo -e "\n---------------------------------------------------"
 	echo -e "Check for coocked file:"
 	if [ -f $RK/$FILENAME.zip ]; then
 		echo -e $COLOR_GREEN
@@ -114,9 +119,9 @@ FILE_CHECK()
 # check for errors
 LOG_CHECK()
 {
-	echo -e "***************************************************"
+	echo -e "---------------------------------------------------"
 	echo -e "Check for compile errors:"
-	echo -e $COLOR_RED
+	echo -e $BLINK_RED
 
 	cd $WD/temp
 	grep error compile.log
@@ -128,12 +133,13 @@ LOG_CHECK()
 	cd ..
 	cd ..
 
-	echo -e "***************************************************"
+	echo -e "---------------------------------------------------"
 }
 
 # refresh for new build
 CLEANUP()
 {
+echo -e "${BLINK_RED}";
 	make ARCH=arm mrproper;
 	make clean;
 
@@ -181,6 +187,7 @@ CLEANUP()
 REBUILD()
 {
 clear
+echo -e "${COLOR_NEUTRAL}";
 FILENAME=($NAME-$(date +"[%d-%m-%y]")-$MODEL);
 FILENAME;
 NR_CPUS;
@@ -188,17 +195,15 @@ NR_CPUS;
 	echo -e "\e[41mREBUILD\e[m"
 	echo ""
 
-	touch WORKING_DIR/temp/compile.log
-	echo -e "\n***************************************************" > $LOG
 	echo -e "\nGIT branch and last commit : " >> $LOG
 	git log --oneline --decorate -n 1 >> $LOG
 	echo -e ""
 	echo "CPU : compile with "$NR_CPUS"-way multitask processing" >> $LOG
 	echo "Toolchain: "$TC >> $LOG
 
-	TIMESTAMP1=$(date +%s)
+	DATE_START=$(date +"%s")
 	make ARCH=arm CROSS_COMPILE=$TC $CUSTOM_DEF
-	echo -e $COLOR_GREEN"\nI'm coocking, make a coffee ..." $COLOR_NEUTRAL
+	echo -e $COLOR_GREEN"\nCompiling ..." $COLOR_NEUTRAL
 	echo ""
 	make ARCH=arm CROSS_COMPILE=$TC zImage-dtb -j $NR_CPUS | grep :
 	clear
@@ -206,6 +211,10 @@ NR_CPUS;
 POST_BUILD >> $LOG
 FILE_CHECK;
 LOG_CHECK;
+
+DATE_END=$(date +"%s")
+DIFF=$(($DATE_END - $DATE_START))
+echo "Time: $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) seconds."
 }
 
 REBUILD_NCONF()
@@ -215,21 +224,21 @@ FILENAME=($NAME-$(date +"[%y-%m-%d]")-$MODEL);
 FILENAME;
 NR_CPUS;
 
-	echo -e "\e[41mREBUILD\e[m"
+	echo -e "\e[41mREBUILD NCONF\e[m"
 	echo -e ""
 
-	echo -e "\n***************************************************" > $LOG
 	echo -e "\nGIT branch and last commit : " >> $LOG
 	git log --oneline --decorate -n 1 >> $LOG
 	echo -e ""
 	echo -e "CPU : compile with "$NR_CPUS"-way multitask processing" >> $LOG
 	echo -e "Toolchain: "$TC >> $LOG
 
+	DATE_START=$(date +"%s")
 	make ARCH=arm CROSS_COMPILE=$TC $CUSTOM_DEF
 	make ARCH=arm CROSS_COMPILE=$TC nconfig
-	echo -e $COLOR_GREEN"\nI'm coocking, make a coffee ..." $COLOR_NEUTRAL
+	echo -e $COLOR_GREEN"\nCompiling ..." $COLOR_NEUTRAL
 	echo ""
-	TIMESTAMP1=$(date +%s)
+
 	make ARCH=arm CROSS_COMPILE=$TC zImage-dtb -j $NR_CPUS | grep :
 	clear
 
@@ -243,7 +252,7 @@ CONTINUE_BUILD()
 	clear
 	echo -e "\e[41mCONTINUE_BUILD\e[m"
 	sleep 3
-	time make ARCH=arm CROSS_COMPILE=$TC zImage-dtb -j ${CPUNUM}
+	make ARCH=arm CROSS_COMPILE=$TC zImage-dtb -j ${CPUNUM}
 	clear
 }
 
@@ -257,12 +266,12 @@ if [ -f arch/arm/boot/zImage-dtb ]
 
 	echo "generating device tree..."
 	echo ""
-	./$TS/dtbTool -o $BOOT/dt.img -s 2048 -p $DTC/ $BOOT/ >> $LOG
+	./$TS/dtbTool -o $BOOT/dt.img -s 2048 -p $DTC/ $BOOT/
 
 	if [ -f $BOOT/dt.img ]; then
-		echo -e "\nDevice Tree : Builded" >> $LOG
+		echo -e "\nDevice Tree : Builded"
 	else
-		echo -e "\nDevice Tree : Failed !" >> $LOG
+		echo -e "\nDevice Tree : Failed !"
 	fi;
 
 	# copy all selected ramdisk files to temp folder
@@ -272,11 +281,11 @@ if [ -f arch/arm/boot/zImage-dtb ]
 
 	echo "copy zImage and dtb"
 	echo ""
-	\cp -v $BOOT/zImage-dtb $WD/temp/zImage >> $LOG
-	\cp -v $BOOT/dt.img $WD/temp/dtb >> $LOG
+	\cp -v $BOOT/zImage-dtb $WD/temp/zImage
+	\cp -v $BOOT/dt.img $WD/temp/dtb
 
 	echo "copy .config"
-	\cp -v .config $WD/temp/kernel_config_view_only >> $LOG
+	\cp -v .config $WD/temp/kernel_config_view_only
 
 	echo "Create flashable zip"
 	cd $WD/temp
@@ -287,11 +296,11 @@ if [ -f arch/arm/boot/zImage-dtb ]
 	cd ..
 	cp -v $WD/temp/kernel.zip $RK/$FILENAME.zip
 	md5sum $RK/$FILENAME.zip > $RK/$FILENAME.zip.md5
-		
-	TIMESTAMP2=$(date +%s) 
-	TIME=$(($TIMESTAMP2 - $TIMESTAMP1))
-	echo -e "\nCompile time: "$TIME "seconds" >> $LOG
 
+	DATE_END=$(date +"%s")
+	DIFF=$(($DATE_END - $DATE_START))
+	echo "Time: $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) seconds."
+	echo ""
 else
 	echo "Kernel STUCK in BUILD! no zImage exist !"
 
@@ -299,8 +308,13 @@ else
 
 fi;
 }
-
-echo "Select Toolchain ... ";
+echo -e "${COLOR_RED}";
+echo " _______         __          __         __ "
+echo "|     __|.---.-.|  |--.----.|__|.-----.|  |"
+echo "|    |  ||  _  ||  _  |   _||  ||  -__||  |"
+echo "|_______||___._||_____|__|  |__||_____||__|"
+echo -e "${COLOR_GREEN}";
+                                                        
 select CHOICE in Gabriel-ct.ng Google-4.8.0 ARCHI-4.9.3 ARCHI-5.1.0 ARCHI-5.2.0 UBER-5.1.1 UBER-5.2.0 UBER-5.3.0 UBER-6.0.0 UBER-7.0.0 DORI-LINARO-4.9.4 DORI-5.3.X DORI-5.4.X DORI-6.1.X DORI-6.2.X LINARO-4.9.x LINARO-5.3.x LINARO-6.1.x LINARO-6.3.x LAST_ONE CLEANUP CONTINUE_BUILD; do
 	case "$CHOICE" in
 		"Gabriel-ct.ng")
@@ -368,6 +382,7 @@ select CHOICE in Gabriel-ct.ng Google-4.8.0 ARCHI-4.9.3 ARCHI-5.1.0 ARCHI-5.2.0 
 			break;;
 	esac;
 done;
+echo -e ""
 echo "What to do What not to do ?!";
 select CHOICE in D850 D851 D852 D855_16 D855_32 VS985 LS990 F400 CONTINUE_BUILD D855_STOCK_DEF D855_NCONF ALL; do
 	case "$CHOICE" in
