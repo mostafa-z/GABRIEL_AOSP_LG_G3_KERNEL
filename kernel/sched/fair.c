@@ -5176,7 +5176,6 @@ redo:
 	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
 
 	ld_moved = 0;
-	lb_iterations = 1;
 	if (busiest->nr_running > 1 ||
 		(busiest->nr_running == 1 && env.flags & LBF_POWER_BAL)) {
 		/*
