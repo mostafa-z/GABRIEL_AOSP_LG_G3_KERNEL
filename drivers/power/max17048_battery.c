@@ -386,7 +386,8 @@ static void max17048_low_polling_work(struct work_struct *work)
 		power_supply_changed(chip->batt_psy);
 	}
 
-	schedule_delayed_work(&chip->low_polling_work,
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->low_polling_work,
 		round_jiffies_relative(msecs_to_jiffies(
 			MAX17048_LOW_POLLING_PERIOD)));
 	return ;
@@ -394,7 +395,8 @@ static void max17048_low_polling_work(struct work_struct *work)
 psy_error:
 	printk(KERN_INFO "%s : batt_psy is not init yet!\n", __func__);
 
-	schedule_delayed_work(&chip->low_polling_work,
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->low_polling_work,
 		round_jiffies_relative(msecs_to_jiffies(
 			MAX17048_LOW_POLLING_PERIOD)));
 }
@@ -468,19 +470,22 @@ static void max17048_polling_work(struct work_struct *work)
 			__func__, capacity, voltage);
 
 	if (8 < capacity) {
-		schedule_delayed_work(&chip->polling_work,
+		queue_delayed_work(system_power_efficient_wq,
+				&chip->polling_work,
 				round_jiffies_relative(msecs_to_jiffies(
 					MAX17048_POLLING_PERIOD)));
 	}
 
 	if (3 < capacity && capacity < 8) {
 		/* 4%~7% 10sec polling */
-		schedule_delayed_work(&chip->polling_work,
+		queue_delayed_work(system_power_efficient_wq,
+			&chip->polling_work,
 			round_jiffies_relative(msecs_to_jiffies(
 				MAX17048_POLLING_PERIOD_7)));
 	} else {
 		/* 0%~3% 5sec polling */
-		schedule_delayed_work(&chip->polling_work,
+		queue_delayed_work(system_power_efficient_wq,
+			&chip->polling_work,
 			round_jiffies_relative(msecs_to_jiffies(
 				MAX17048_POLLING_PERIOD_3)));
 	}
@@ -588,7 +593,8 @@ static void max17048_work(struct work_struct *work)
 
 #ifdef CONFIG_MAX17048_LOW_POLLING
 	if (chip->capacity_level < 3) {
-		schedule_delayed_work(&chip->low_polling_work,
+		queue_delayed_work(system_power_efficient_wq,
+			&chip->low_polling_work,
 			round_jiffies_relative(msecs_to_jiffies(
 				MAX17048_LOW_POLLING_PERIOD)));
 	} else {
@@ -599,7 +605,8 @@ static void max17048_work(struct work_struct *work)
 #ifdef CONFIG_MAX17048_SOC_ALERT
 	enable_irq(gpio_to_irq(chip->model_data->alert_gpio));
 #else
-	schedule_delayed_work(&chip->work,
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->work,
 		round_jiffies_relative(msecs_to_jiffies(
 			MAX17048_POLLING_PERIOD)));
 #endif
@@ -610,7 +617,8 @@ psy_error:
 #ifdef CONFIG_MAX17048_SOC_ALERT
 	enable_irq(gpio_to_irq(chip->model_data->alert_gpio));
 #else
-	schedule_delayed_work(&chip->work,
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->work,
 		round_jiffies_relative(msecs_to_jiffies(
 			MAX17048_POLLING_PERIOD)));
 #endif
@@ -906,7 +914,8 @@ ssize_t max17048_show_voltage(struct device *dev,
 #ifdef CONFIG_MAX17048_SOC_ALERT
 		enable_irq(gpio_to_irq(ref->model_data->alert_gpio));
 #else
-		schedule_delayed_work(&ref->work, HZ);
+		queue_delayed_work(system_power_efficient_wq,
+			&ref->work, HZ);
 #endif
 	}
 
@@ -950,7 +959,8 @@ ssize_t max17048_show_capacity(struct device *dev,
 #ifdef CONFIG_MAX17048_SOC_ALERT
 		enable_irq(gpio_to_irq(ref->model_data->alert_gpio));
 #else
-		schedule_delayed_work(&ref->work, HZ);
+		queue_delayed_work(system_power_efficient_wq,
+			&ref->work, HZ);
 #endif
 	}
 
@@ -971,7 +981,8 @@ ssize_t max17048_store_status(struct device *dev,
 #ifndef CONFIG_MAX17048_SOC_ALERT
 		cancel_delayed_work(&ref->work);
 		max17048_set_reset(ref->client);
-		schedule_delayed_work(&ref->work, HZ);
+		queue_delayed_work(system_power_efficient_wq,
+			&ref->work, HZ);
 #else
 		disable_irq(gpio_to_irq(ref->model_data->alert_gpio));
 		max17048_set_reset(ref->client);
@@ -1271,7 +1282,8 @@ static int __devinit max17048_probe(struct i2c_client *client,
 	INIT_DELAYED_WORK(&chip->low_polling_work, max17048_low_polling_work);
 #endif
 #ifndef CONFIG_LGE_PM
-	schedule_delayed_work(&chip->work,
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->work,
 		round_jiffies_relative(
 		msecs_to_jiffies(MAX17048_POLLING_PERIOD)));
 #else
@@ -1303,7 +1315,8 @@ static int __devinit max17048_probe(struct i2c_client *client,
 	max17048_work(&(chip->work.work));
 
 #ifdef CONFIG_MAX17048_POLLING
-	schedule_delayed_work(&chip->polling_work,
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->polling_work,
 		round_jiffies_relative(
 			msecs_to_jiffies(MAX17048_POLLING_PERIOD)));
 #endif
@@ -1396,11 +1409,14 @@ static int max17048_resume(struct i2c_client *client)
 		return 0;
 
 #ifdef CONFIG_MAX17048_POLLING
-	schedule_delayed_work(&ref->polling_work, MAX17048_POLLING_PERIOD);
+	queue_delayed_work(system_power_efficient_wq,
+		&ref->polling_work,
+		MAX17048_POLLING_PERIOD);
 #endif
 
 #ifndef CONFIG_MAX17048_SOC_ALERT
-	schedule_delayed_work(&ref->work, HZ);
+	queue_delayed_work(system_power_efficient_wq,
+		&ref->work, HZ);
 #else
 	max17048_work(&(ref->work.work));
 	ref->state = 1;
