@@ -1139,7 +1139,8 @@ static void bq24296_chg_timeout(struct bq24296_chip *chip,
 
 	chip->chg_timeout = true;
 
-	schedule_delayed_work(&chip->battemp_work,
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->battemp_work,
 		MONITOR_BATTEMP_POLLING_PERIOD);
 }
 
@@ -1221,7 +1222,9 @@ static void bq24296_usbin_mon_worker(struct work_struct *work)
 			chip->ac_psy.set_event_property(&chip->ac_psy,
 				POWER_SUPPLY_PROP_ABNORMAL_TA, &val);
 			mutex_unlock(&chip->usbin_lock);
-			schedule_delayed_work(&chip->usbin_mon, msecs_to_jiffies(1000));
+			queue_delayed_work(system_power_efficient_wq,
+				&chip->usbin_mon,
+				msecs_to_jiffies(1000));
 			pr_info("\n\nabnormal TA detected..!set %dmA\n\n", val.intval);
 			return;
 		}
@@ -1450,7 +1453,8 @@ static void bq24296_irq_worker(struct work_struct *work)
 #endif
 #ifdef CONFIG_LGE_CHARGER_TEMP_SCENARIO
 		cancel_delayed_work_sync(&chip->battemp_work);
-		schedule_delayed_work(&chip->battemp_work, HZ*1);
+		queue_delayed_work(system_power_efficient_wq,
+			&chip->battemp_work, HZ*1);
 		if (!usb_present &&
 			wake_lock_active(&chip->lcs_wake_lock))
 			wake_unlock(&chip->lcs_wake_lock);
@@ -1489,10 +1493,13 @@ static irqreturn_t bq24296_irq(int irq, void *dev_id)
 	NULL_CHECK(chip, IRQ_NONE);
 
 #ifdef I2C_SUSPEND_WORKAROUND
-	schedule_delayed_work(&chip->check_suspended_work,
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->check_suspended_work,
 		msecs_to_jiffies(100));
 #else
-	schedule_delayed_work(&chip->irq_work, msecs_to_jiffies(100));
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->irq_work,
+		msecs_to_jiffies(100));
 #endif
 
 	return IRQ_HANDLED;
@@ -1507,10 +1514,13 @@ static void bq24296_check_suspended_worker(struct work_struct *work)
 
 	if (chip->suspend) {
 		pr_debug("bq24296 suspended. try i2c operation after 100ms.\n");
-		schedule_delayed_work(&chip->check_suspended_work, msecs_to_jiffies(100));
+		queue_delayed_work(system_power_efficient_wq,
+			&chip->check_suspended_work,
+			msecs_to_jiffies(100));
 	} else {
 		pr_debug("bq24296 resumed. do bq24296_irq.\n");
-		schedule_delayed_work(&chip->irq_work, 0);
+		queue_delayed_work(system_power_efficient_wq,
+			&chip->irq_work, 0);
 	}
 }
 #endif /* I2C_SUSPEND_WORKAROUND */
@@ -2252,7 +2262,8 @@ static void slow_charging_check_worker(struct work_struct *work)
 	if (ADC_TO_IINMAX(result.physical) < VZW_UNDER_CURRENT_CHARGING_MA) {
 		if (chip->retry_count < VZW_UNDER_CURRENT_CHARGING_CHECK_RETRIES) {
 			pr_err("slow charging count = %d\n", chip->retry_count);
-			schedule_delayed_work(&chip->slow_charging_check_work,
+			queue_delayed_work(system_power_efficient_wq,
+				&chip->slow_charging_check_work,
 				VZW_UNDER_CURRENT_CHARGING_DELAY);
 			chip->retry_count++;
 		}
@@ -2315,7 +2326,8 @@ static void VZW_CHG_director(struct bq24296_chip *chip)
 	}
 
 	/* slow charger detect */
-	schedule_delayed_work(&chip->slow_charging_check_work, 0);
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->slow_charging_check_work, 0);
 
 	return;
 }
@@ -2392,7 +2404,9 @@ static void bq24296_batt_external_power_changed(struct power_supply *psy)
 			if (likely(delayed_work_pending(&chip->usbin_mon))) {
 				cancel_delayed_work_sync(&chip->usbin_mon);
 			}
-			schedule_delayed_work(&chip->usbin_mon, msecs_to_jiffies(10));
+			queue_delayed_work(system_power_efficient_wq,
+				&chip->usbin_mon,
+				msecs_to_jiffies(10));
 		}
 	}
 	bq24296_decide_otg_mode(chip);
@@ -2674,7 +2688,8 @@ static int bq24296_power_set_event_property(struct power_supply *psy,
 			chip->wlc_input_current_te, chip->wlc_chg_current_te);
 
 		cancel_delayed_work_sync(&chip->battemp_work);
-		schedule_delayed_work(&chip->battemp_work, HZ*1);
+		queue_delayed_work(system_power_efficient_wq,
+			&chip->battemp_work, HZ*1);
 		break;
 #endif
 #endif
@@ -2935,9 +2950,11 @@ bq24296_set_thermal_chg_current_set(const char *val, struct kernel_param *kp)
 	cancel_delayed_work_sync(&the_chip->battemp_work);
 #ifdef CONFIG_LGE_PM_LLK_MODE
 	if (!battemp_work_cancel)
-		schedule_delayed_work(&the_chip->battemp_work, HZ*1);
+		queue_delayed_work(system_power_efficient_wq,
+			&the_chip->battemp_work, HZ*1);
 #else
-	schedule_delayed_work(&the_chip->battemp_work, HZ*1);
+	queue_delayed_work(system_power_efficient_wq,
+		&the_chip->battemp_work, HZ*1);
 #endif
 #else
 	pr_err("thermal-engine chg current control not enabled\n");
@@ -2975,7 +2992,8 @@ static void pma_workaround(struct bq24296_chip *chip, int temp)
 		bq24296_enable_otg(chip, true);
 		pr_err("[WLC] set pma workaround\n");
 
-		schedule_delayed_work(&chip->pma_workaround_work, 15 * HZ);
+		queue_delayed_work(system_power_efficient_wq,
+			&chip->pma_workaround_work, 15 * HZ);
 		wake_lock(&chip->pma_workaround_wake_lock);
 		pr_err("[WLC] set pma wake lock\n");
 		pr_err("[WLC] after 15sec, unset pma workaround\n");
@@ -3128,7 +3146,8 @@ static void bq24296_monitor_batt_temp(struct work_struct *work)
 
 	bq24296_reginfo(chip);
 
-	schedule_delayed_work(&chip->battemp_work,
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->battemp_work,
 		MONITOR_BATTEMP_POLLING_PERIOD);
 }
 #endif
@@ -3752,10 +3771,13 @@ static int bq24296_probe(struct i2c_client *client,
 	safety_timer_enabled = 1;
 
 #ifdef CONFIG_LGE_CHARGER_TEMP_SCENARIO
-	schedule_delayed_work(&chip->battemp_work,
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->battemp_work,
 		MONITOR_BATTEMP_POLLING_PERIOD / 3);
 #endif
-	schedule_delayed_work(&chip->irq_work, msecs_to_jiffies(2000));
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->irq_work,
+		msecs_to_jiffies(2000));
 #ifdef CONFIG_ZERO_WAIT
 	ret = zw_psy_wakeup_source_register(&chip->chg_wake_lock.ws);
 	if (ret < 0)
@@ -3888,7 +3910,8 @@ static int bq24296_resume(struct i2c_client *client)
 	struct bq24296_chip *chip = i2c_get_clientdata(client);
 	NULL_CHECK(chip, -EINVAL);
 	chip->suspend = false;
-	schedule_delayed_work(&chip->battemp_work, HZ*1);
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->battemp_work, HZ*1);
 	return 0;
 }
 
