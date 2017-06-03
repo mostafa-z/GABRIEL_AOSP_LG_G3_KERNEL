@@ -32,6 +32,8 @@ static bool enable_timerfd_ws = true;
 module_param(enable_timerfd_ws, bool, 0644);
 static bool enable_netlink_ws = true;
 module_param(enable_netlink_ws, bool, 0644);
+static bool enable_pmservice_wakelocks_ws = true;
+module_param(enable_pmservice_wakelocks_ws, bool, 0644);
 static bool enable_wlan_wd_wake_ws = true;
 module_param(enable_wlan_wd_wake_ws, bool, 0644);
 
@@ -444,6 +446,8 @@ static bool wakeup_source_blocker(struct wakeup_source *ws)
 				!strncmp(ws->name, "[timerfd]", wslen)) ||
 			(!enable_netlink_ws &&
 				!strncmp(ws->name, "NETLINK", wslen)) ||
+			(!enable_pmservice_wakelocks_ws &&
+				!strncmp(ws->name, "PowerManagerService.WakeLocks", wslen)) ||
 			(!enable_wlan_wd_wake_ws &&
 				!strncmp(ws->name, "wlan_wd_wake", wslen))) {
 			if (ws->active) {
