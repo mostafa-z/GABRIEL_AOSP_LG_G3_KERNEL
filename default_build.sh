@@ -178,6 +178,8 @@ echo -e "${BLINK_RED}";
 	for i in $(find "$KD"/ -name "compile.log"); do
 		rm -fv "$i";
 	done;
+
+	git checkout android-toolchain/
 }
 
 #===============================================================================
