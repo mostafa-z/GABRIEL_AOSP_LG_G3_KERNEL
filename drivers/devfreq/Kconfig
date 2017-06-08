@@ -74,6 +74,7 @@ config DEVFREQ_GOV_MSM_ADRENO_TZ
 config ADRENO_IDLER
 	tristate "MSM Adreno idler"
 	depends on DEVFREQ_GOV_MSM_ADRENO_TZ
+	default y
 	help
 	  Uses a different calculation method on top of Adreno TZ
 	  just for calculating frequency for idle to reduce the
@@ -110,6 +111,7 @@ config DEVFREQ_GOV_CONSERVATIVE
 config SIMPLE_GPU_ALGORITHM
 	bool "Simple GPU algorithm"
 	depends on DEVFREQ_GOV_MSM_ADRENO_TZ
+	default y
 	help
 	  Simple user configurable GPU controlling algorithm
 
